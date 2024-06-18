@@ -3,17 +3,12 @@
 tail_length = 30;
 base_width = 17;
 overhang_width = 10;
+tails=2;
 chamf = 4;
 e = 0.001;
 tol= 3;
-
-inner_tail_count = 2;
 anchor_length = 12;
-
 step_width = (2*base_width+ 2*overhang_width + 2*tol);
-
-total_width = 2*base_width + overhang_width + tol 
-            + inner_tail_count*step_width;
 
 
 module dove_overhang() {
@@ -64,43 +59,46 @@ module dove_tail_end(){
     dove_overhang();
 }
 
-module side_a ()
-{
+module tailrow(inner_tail_count){
     for(i=[0:inner_tail_count-1]){
-        translate([base_width + tol + i*step_width , 0, 0])
+        translate([i* step_width , 0, 0])
         dove_tail();
     }
-    
-  translate([ total_width ,0,0])
-  mirror([1,0,0])
-  dove_tail_end();
-
-  translate([0,-anchor_length])
-  square([total_width,anchor_length]);
-};
-  
-module side_b(){
-  for(i=[0:inner_tail_count-1]){
-    translate([2*base_width + 2*tol + overhang_width + i*step_width, tail_length, 0])
-    mirror([0,1,0])
-    dove_tail();
-  }
-  
-  translate([0,tail_length,0])
-  mirror([0,1,0])
-  dove_tail_end();
- 
-  translate([0,tail_length])
-  square([total_width,anchor_length]);
 }
 
-// todo: side_a and side_b can be merged, probably
+module side (has_end, has_start, inner_tail_count){
+    // todo: depending on "has_end" and "has_start" the total width should vary
+    
+    total_width = 2*base_width + 1*overhang_width + 1*tol 
+                + inner_tail_count*step_width;
+    
+    if (has_start){
+        translate([0,0,0])
+        dove_tail_end();
+        
+        translate([1*overhang_width +2* base_width +2* tol ,0,0])
+        tailrow(inner_tail_count);
+    }else {
+        translate([ base_width + tol ,0,0])
+        tailrow(inner_tail_count);
+    }
+    
+    if (has_end){
+        translate([ total_width ,0,0])
+        mirror([1,0,0])
+        dove_tail_end();
+    }
+
+    translate([0,-anchor_length])
+    square([total_width,anchor_length]);
+}
 
 color("green") 
 linear_extrude(height = 20)
-side_a();
+side(has_end=false, has_start=true, inner_tail_count=tails);;
 
-color("orange")
+color("orange", alpha=0.3)
 linear_extrude(height = 20)
-translate([0,tol/2,0])
-side_b();
+translate([0 ,tail_length + tol/2,0])
+mirror([0,1,0])
+side(has_end = true, has_start =false, inner_tail_count=tails);
